@@ -104,7 +104,7 @@ addTime dt t = dt {
                  minute = tMinute t + minute dt,
                  second = tSecond t + second dt }
 
-times ∷ Int → Parser t → Parser [t]
+times ∷ Int → Parsec String st t → Parsec String st [t]
 times 0 _ = return []
 times n p = do
   ts ← times (n-1) p
@@ -113,27 +113,27 @@ times n p = do
     Just t' → return (ts ++ [t'])
     Nothing → return ts
                                
-number ∷ Int → Int → Parser Int
+number ∷ Int → Int → Parsec String st Int
 number n m = do
   t ← read `fmap` (n `times` digit)
   if t > m
     then fail "number too large"
     else return t
 
-pYear ∷ Parser Int
+pYear ∷ Parsec String st Int
 pYear = do
   y ← number 4 10000
   if y < 2000
     then return (y+2000)
     else return y
 
-pMonth ∷ Parser Int
+pMonth ∷ Parsec String st Int
 pMonth = number 2 12
 
-pDay ∷ Parser Int
+pDay ∷ Parsec String st Int
 pDay = number 2 31
 
-euroNumDate ∷ Parser DateTime
+euroNumDate ∷ Parsec String st DateTime
 euroNumDate = do
   d ← pDay
   char '.'
@@ -142,7 +142,7 @@ euroNumDate = do
   y ← pYear
   return $ date y m d
 
-americanDate ∷ Parser DateTime
+americanDate ∷ Parsec String st DateTime
 americanDate = do
   y ← pYear
   char '/'
@@ -151,21 +151,21 @@ americanDate = do
   d ← pDay
   return $ date y m d
 
-euroNumDate' ∷ Int → Parser DateTime
+euroNumDate' ∷ Int → Parsec String st DateTime
 euroNumDate' year = do
   d ← pDay
   char '.'
   m ← pMonth
   return $ date year m d
 
-americanDate' ∷ Int → Parser DateTime
+americanDate' ∷ Int → Parsec String st DateTime
 americanDate' year = do
   m ← pMonth
   char '/'
   d ← pDay
   return $ date year m d
 
-strDate ∷ Parser DateTime
+strDate ∷ Parsec String st DateTime
 strDate = do
   d ← pDay
   space
@@ -178,7 +178,7 @@ strDate = do
       notFollowedBy $ char ':'
       return $ date y m d
 
-strDate' ∷ Int → Parser DateTime
+strDate' ∷ Int → Parsec String st DateTime
 strDate' year = do
   d ← pDay
   space
@@ -187,7 +187,7 @@ strDate' year = do
     Nothing → fail $ "unknown month: "++ms
     Just m  → return $ date year m d
 
-time24 ∷ Parser Time
+time24 ∷ Parsec String st Time
 time24 = do
   h ← number 2 23
   char ':'
@@ -200,7 +200,7 @@ time24 = do
       notFollowedBy letter
       return $ Time h m s
 
-ampm ∷ Parser Int
+ampm ∷ Parsec String st Int
 ampm = do
   s ← many1 letter
   case map toUpper s of
@@ -208,7 +208,7 @@ ampm = do
     "PM" → return 12
     _ → fail "AM/PM expected"
 
-time12 ∷ Parser Time
+time12 ∷ Parsec String st Time
 time12 = do
   h ← number 2 12
   char ':'
@@ -221,7 +221,7 @@ time12 = do
   hd ← ampm
   return $ Time (h+hd) m s
 
-pAbsDate ∷ Int → Parser DateTime
+pAbsDate ∷ Int → Parsec String st DateTime
 pAbsDate year = do
   date ← choice $ map try $ map ($ year) $ [
                               const euroNumDate,
@@ -264,23 +264,23 @@ addInterval dt (Weeks ws) = modifyDate addDays (ws*7) dt
 addInterval dt (Months ms) = modifyDate addGregorianMonthsClip ms dt
 addInterval dt (Years ys) = modifyDate addGregorianYearsClip ys dt
 
-maybePlural ∷ String → Parser String
+maybePlural ∷ String → Parsec String st String
 maybePlural str = do
   r ← string str
   optional $ char 's'
   return (capitalize r)
 
-pDateInterval ∷ Parser DateIntervalType
+pDateInterval ∷ Parsec String st DateIntervalType
 pDateInterval = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
   return $ read s
 
-pRelDate ∷ DateTime → Parser DateTime
+pRelDate ∷ DateTime → Parsec String st DateTime
 pRelDate date = do
   offs ← (try futureDate) <|> (try passDate) <|> (try today) <|> (try tomorrow) <|> yesterday
   return $ date `addInterval` offs
 
-futureDate ∷ Parser DateInterval
+futureDate ∷ Parsec String st DateInterval
 futureDate = do
   string "in "
   n ← many1 digit
@@ -292,7 +292,7 @@ futureDate = do
     Month → return $ Months (read n)
     Year →  return $ Years (read n)
 
-passDate ∷ Parser DateInterval
+passDate ∷ Parsec String st DateInterval
 passDate = do
   n ← many1 digit
   char ' '
@@ -304,24 +304,24 @@ passDate = do
     Month → return $ Months $ - (read n)
     Year →  return $ Years $ - (read n)
 
-today ∷ Parser DateInterval
+today ∷ Parsec String st DateInterval
 today = do
   string "today"
   return $ Days 0
 
-tomorrow ∷ Parser DateInterval
+tomorrow ∷ Parsec String st DateInterval
 tomorrow = do
   string "tomorrow"
   return $ Days 1
 
-yesterday ∷ Parser DateInterval
+yesterday ∷ Parsec String st DateInterval
 yesterday = do
   string "yesterday"
   return $ Days (-1)
 
 -- | Parsec parser for DateTime.
 pDate ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
-      → Parser DateTime
+      → Parsec String st DateTime
 pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
 
 -- | Parse date/time
