@@ -1,6 +1,6 @@
 {-# LANGUAGE UnicodeSyntax, DeriveDataTypeable #-}
 -- | Operations with dates
-module Todos.Dates
+module Data.Dates
   (DateTime (..),
    Time (..),
    parseDate,
