@@ -65,6 +65,7 @@ data Time =
     tSecond ∷ Int }
   deriving (Eq,Ord,Show,Data,Typeable)
 
+-- | Get current date and time.
 getCurrentDateTime ∷  IO DateTime
 getCurrentDateTime = do
   zt ← getZonedTime
@@ -318,11 +319,13 @@ yesterday = do
   string "yesterday"
   return $ Days (-1)
 
-pDate ∷ DateTime → Parser DateTime
+-- | Parsec parser for DateTime.
+pDate ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
+      → Parser DateTime
 pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
 
 -- | Parse date/time
-parseDate ∷ DateTime  -- ^ Current date/time
+parseDate ∷ DateTime  -- ^ Current date / time, to use as base for relative dates
           → String    -- ^ String to parse
           → Either ParseError DateTime
 parseDate date s = runParser (pDate date) () "" s

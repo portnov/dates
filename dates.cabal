@@ -2,8 +2,22 @@ name:                dates
 version:             0.1.0.0
 synopsis:            Small library for parsing different dates formats.
 description:         This package allows to parse many different formats
-                     of dates. For example, `2012/09/06' or '06.09.2012'
-                     are supported.
+                     of dates. Both absolute and relative dates are supported.
+                     Supported date formats are:
+                     .
+                       * DD.MM.YYYY
+                       .
+                       * YYYY\/MM\/DD
+                       .
+                       * `12 September 2012'
+                       .
+                       * `today', `tomorrow', `yesterday'
+                       .
+                       * `in 2 days', '3 weeks ago'
+                     .
+                     4-digits years may be abbreviated (such as 12 for 2012).
+                     Both 12-hour and 24-hour time formats are supported.
+
 homepage:            http://redmine.iportnov.ru/projects/dates/
 license:             BSD3
 license-file:        LICENSE
@@ -22,3 +36,7 @@ library
                        time ==1.4.*,
                        parsec ==3.1.*,
                        syb ==0.3.*
+
+Source-repository head
+  type:     git
+  location: git://redmine.iportnov.ru/dates.git
