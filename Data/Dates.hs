@@ -65,6 +65,12 @@ data Time =
     tSecond ∷ Int }
   deriving (Eq,Ord,Show,Data,Typeable)
 
+tryRead :: Read a => String -> Parsec String st a
+tryRead str =
+  case reads str of
+    [(res, "")] -> return res
+    _ -> fail $ "Cannot read: " ++ str
+
 -- | Get current date and time.
 getCurrentDateTime ∷  IO DateTime
 getCurrentDateTime = do
@@ -115,7 +121,7 @@ times n p = do
                                
 number ∷ Int → Int → Parsec String st Int
 number n m = do
-  t ← read `fmap` (n `times` digit)
+  t ← tryRead =<< (n `times` digit)
   if t > m
     then fail "number too large"
     else return t
@@ -273,7 +279,7 @@ maybePlural str = do
 pDateInterval ∷ Parsec String st DateIntervalType
 pDateInterval = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
-  return $ read s
+  tryRead s
 
 pRelDate ∷ DateTime → Parsec String st DateTime
 pRelDate date = do
@@ -287,10 +293,10 @@ futureDate = do
   char ' '
   tp ← pDateInterval
   case tp of
-    Day →   return $ Days (read n)
-    Week →  return $ Weeks (read n)
-    Month → return $ Months (read n)
-    Year →  return $ Years (read n)
+    Day →   Days   `fmap` tryRead n
+    Week →  Weeks  `fmap` tryRead n
+    Month → Months `fmap` tryRead n
+    Year →  Years  `fmap` tryRead n
 
 passDate ∷ Parsec String st DateInterval
 passDate = do
@@ -299,10 +305,10 @@ passDate = do
   tp ← pDateInterval
   string " ago"
   case tp of
-    Day →   return $ Days $ - (read n)
-    Week →  return $ Weeks $ - (read n)
-    Month → return $ Months $ - (read n)
-    Year →  return $ Years $ - (read n)
+    Day →   (Days   . negate) `fmap` tryRead n
+    Week →  (Weeks  . negate) `fmap` tryRead n
+    Month → (Months . negate) `fmap` tryRead n
+    Year →  (Years  . negate) `fmap` tryRead n
 
 today ∷ Parsec String st DateInterval
 today = do
