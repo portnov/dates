@@ -5,7 +5,8 @@ module Data.Dates
    Time (..),
    parseDate,
    pDate,
-   getCurrentDateTime
+   getCurrentDateTime,
+   tryRead
   ) where
 
 import Prelude.Unicode
@@ -65,6 +66,7 @@ data Time =
     tSecond ∷ Int }
   deriving (Eq,Ord,Show,Data,Typeable)
 
+-- | Parser version of Prelude.read
 tryRead :: Read a => String -> Parsec String st a
 tryRead str =
   case reads str of
