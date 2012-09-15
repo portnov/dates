@@ -2,7 +2,8 @@
 
 module Data.Dates.Types
   (DateTime (..),
-   Time (..)
+   Time (..),
+   months, capitalize
   ) where
 
 import Prelude.Unicode
