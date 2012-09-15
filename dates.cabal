@@ -1,5 +1,5 @@
 name:                dates
-version:             0.1.2.0
+version:             0.2.0.0
 synopsis:            Small library for parsing different dates formats.
 description:         This package allows to parse many different formats
                      of dates. Both absolute and relative dates are supported.
@@ -17,6 +17,9 @@ description:         This package allows to parse many different formats
                      .
                      4-digits years may be abbreviated (such as 12 for 2012).
                      Both 12-hour and 24-hour time formats are supported.
+                     .
+                     User-specified date formats are supported by
+                     Data.Dates.Formats module.
 
 homepage:            http://redmine.iportnov.ru/projects/dates/
 license:             BSD3
