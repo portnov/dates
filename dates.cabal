@@ -32,7 +32,10 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  exposed-modules:     Data.Dates
+  exposed-modules:     Data.Dates,
+                       Data.Dates.Types,
+                       Data.Dates.Formats,
+                       Data.Dates.Internal
   -- other-modules:       
   build-depends:       base ==4.5.*,
                        base-unicode-symbols ==0.2.*,
