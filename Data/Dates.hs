@@ -4,7 +4,7 @@ module Data.Dates
   (DateTime (..),
    Time (..),
    parseDate,
-   pDate,
+   pDate, pDateTime,
    getCurrentDateTime,
    tryRead
   ) where
@@ -229,8 +229,8 @@ time12 = do
   hd ← ampm
   return $ Time (h+hd) m s
 
-pAbsDate ∷ Int → Parsec String st DateTime
-pAbsDate year = do
+pAbsDateTime ∷ Int → Parsec String st DateTime
+pAbsDateTime year = do
   date ← choice $ map try $ map ($ year) $ [
                               const euroNumDate,
                               const americanDate,
@@ -245,6 +245,16 @@ pAbsDate year = do
     Just _ → do
       t ← choice $ map try [time12,time24]
       return $ date `addTime` t
+
+pAbsDate ∷ Int → Parsec String st DateTime
+pAbsDate year =
+  choice $ map try $ map ($ year) $ [
+                          const euroNumDate,
+                          const americanDate,
+                          const strDate,
+                          strDate',
+                          euroNumDate',
+                          americanDate']
 
 data DateIntervalType = Day | Week | Month | Year
   deriving (Eq,Show,Read)
@@ -328,8 +338,13 @@ yesterday = do
   return $ Days (-1)
 
 -- | Parsec parser for DateTime.
+pDateTime ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
+          → Parsec String st DateTime
+pDateTime date =  (try $ pRelDate date) <|> (try $ pAbsDateTime $ year date)
+
+-- | Parsec parser for Date only.
 pDate ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
-      → Parsec String st DateTime
+          → Parsec String st DateTime
 pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
 
 -- | Parse date/time
