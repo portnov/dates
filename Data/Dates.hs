@@ -7,7 +7,8 @@ module Data.Dates
    pDate, pDateTime,
    getCurrentDateTime,
    tryRead,
-   DateIntervalType, DateInterval,
+   DateIntervalType (..),
+   DateInterval (..),
    addInterval
   ) where
 
