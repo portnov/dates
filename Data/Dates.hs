@@ -6,7 +6,9 @@ module Data.Dates
    parseDate,
    pDate, pDateTime,
    getCurrentDateTime,
-   tryRead
+   tryRead,
+   DateIntervalType, DateInterval,
+   addInterval
   ) where
 
 import Prelude.Unicode
