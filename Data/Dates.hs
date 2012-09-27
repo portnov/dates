@@ -9,7 +9,7 @@ module Data.Dates
    tryRead,
    DateIntervalType (..),
    DateInterval (..),
-   addInterval
+   addInterval, addTime
   ) where
 
 import Prelude.Unicode
