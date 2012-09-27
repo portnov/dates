@@ -4,7 +4,7 @@ module Data.Dates
   (DateTime (..),
    Time (..),
    parseDate,
-   pDate, pDateTime,
+   pDate, pDateTime, pTime,
    getCurrentDateTime,
    tryRead,
    DateIntervalType (..),
@@ -151,6 +151,9 @@ time12 = do
   hd ← ampm
   return $ Time (h+hd) m s
 
+pTime ∷ Parsec String st Time
+pTime = choice $ map try [time12, time24]
+
 pAbsDateTime ∷ Int → Parsec String st DateTime
 pAbsDateTime year = do
   date ← choice $ map try $ map ($ year) $ [
@@ -165,7 +168,7 @@ pAbsDateTime year = do
   case s of
     Nothing → return date
     Just _ → do
-      t ← choice $ map try [time12,time24]
+      t ← pTime
       return $ date `addTime` t
 
 pAbsDate ∷ Int → Parsec String st DateTime
