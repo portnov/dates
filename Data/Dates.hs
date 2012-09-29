@@ -9,6 +9,9 @@ module Data.Dates
    tryRead,
    DateIntervalType (..),
    DateInterval (..),
+   convertFrom, convertTo,
+   modifyDate,
+   datesDifference,
    addInterval, addTime
   ) where
 
@@ -190,22 +193,32 @@ data DateInterval = Days ℤ
                   | Years ℤ
   deriving (Eq,Show)
 
+-- | Convert date from DateTime to Day
 convertTo ∷  DateTime → Day
 convertTo dt = fromGregorian (fromIntegral $ year dt) (month dt) (day dt)
 
+-- | Convert date from Day to DateTime
 convertFrom ∷  Day → DateTime
 convertFrom dt = 
   let (y,m,d) = toGregorian dt
   in  date (fromIntegral y) m d
 
+-- | Modify DateTime with pure function on Day
 modifyDate ∷  (t → Day → Day) → t → DateTime → DateTime
 modifyDate fn x dt = convertFrom $ fn x $ convertTo dt
 
+-- | Add date interval to DateTime
 addInterval ∷  DateTime → DateInterval → DateTime
 addInterval dt (Days ds) = modifyDate addDays ds dt
 addInterval dt (Weeks ws) = modifyDate addDays (ws*7) dt
 addInterval dt (Months ms) = modifyDate addGregorianMonthsClip ms dt
 addInterval dt (Years ys) = modifyDate addGregorianYearsClip ys dt
+
+-- | Number of days between two dates
+datesDifference ∷ DateTime → DateTime → Integer
+datesDifference d1 d2 =
+  abs $ toModifiedJulianDay (convertTo d1) -
+        toModifiedJulianDay (convertTo d2)
 
 maybePlural ∷ String → Parsec String st String
 maybePlural str = do
