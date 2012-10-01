@@ -227,10 +227,21 @@ maybePlural str = do
   optional $ char 's'
   return (capitalize r)
 
-pDateInterval ∷ Parsec String st DateIntervalType
-pDateInterval = do
+pDateIntervalType ∷ Parsec String st DateIntervalType
+pDateIntervalType = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
   tryRead s
+
+pDateInterval ∷ Parsec String st DateInterval
+pDateInterval = do
+  n ← many1 digit
+  spaces
+  tp ← pDateIntervalType
+  case tp of
+    Day →   Days   `fmap` tryRead n
+    Week →  Weeks  `fmap` tryRead n
+    Month → Months `fmap` tryRead n
+    Year →  Years  `fmap` tryRead n
 
 pRelDate ∷ DateTime → Parsec String st DateTime
 pRelDate date = do
@@ -242,7 +253,7 @@ futureDate = do
   string "in "
   n ← many1 digit
   char ' '
-  tp ← pDateInterval
+  tp ← pDateIntervalType
   case tp of
     Day →   Days   `fmap` tryRead n
     Week →  Weeks  `fmap` tryRead n
@@ -253,7 +264,7 @@ passDate ∷ Parsec String st DateInterval
 passDate = do
   n ← many1 digit
   char ' '
-  tp ← pDateInterval
+  tp ← pDateIntervalType
   string " ago"
   case tp of
     Day →   (Days   . negate) `fmap` tryRead n
