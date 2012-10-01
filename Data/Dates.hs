@@ -5,6 +5,7 @@ module Data.Dates
    Time (..),
    parseDate,
    pDate, pDateTime, pTime,
+   pDateInterval,
    getCurrentDateTime,
    tryRead,
    DateIntervalType (..),
