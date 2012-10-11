@@ -307,27 +307,49 @@ pRelDate date = do
      <|> yesterday
   return $ date `addInterval` offs
 
-lastWeekDay ∷ DateTime → Parsec String st DateTime
-lastWeekDay now = do
-  string "last"
-  spaces
-  wd ← try (string "week" >> return Monday) <|> pWeekDay
-  let monday = lastMonday now
-      monday' = if wd > dateWeekDay now
-                  then monday `minusInterval` Weeks 1
-                  else monday
-  return $ monday' `addInterval` weekdayToInterval wd
+lastDate ∷ DateTime → Parsec String st DateTime
+lastDate now = do
+    string "last"
+    spaces
+    try byweek <|> try bymonth <|> byyear
+  where
+    byweek = do
+      wd ← try (string "week" >> return Monday) <|> pWeekDay
+      let monday = lastMonday now
+          monday' = if wd > dateWeekDay now
+                      then monday `minusInterval` Weeks 1
+                      else monday
+      return $ monday' `addInterval` weekdayToInterval wd
 
-nextWeekDay ∷ DateTime → Parsec String st DateTime
-nextWeekDay now = do
-  string "next"
-  spaces
-  wd ← try (string "week" >> return Monday) <|> pWeekDay
-  let monday = nextMonday now
-      monday' = if wd >= dateWeekDay now
-                  then monday `minusInterval` Weeks 1
-                  else monday
-  return $ monday' `addInterval` weekdayToInterval wd
+    bymonth = do
+      string "month"
+      return $ now {day = 1}
+
+    byyear = do
+      string "year"
+      return $ now {month = 1, day = 1}
+
+nextDate ∷ DateTime → Parsec String st DateTime
+nextDate now = do
+    string "next"
+    spaces
+    try byweek <|> try bymonth <|> byyear
+  where
+    byweek = do
+      wd ← try (string "week" >> return Monday) <|> pWeekDay
+      let monday = nextMonday now
+          monday' = if wd > dateWeekDay now
+                      then monday `minusInterval` Weeks 1
+                      else monday
+      return $ monday' `addInterval` weekdayToInterval wd
+
+    bymonth = do
+      string "month"
+      return (now `addInterval` Months 1) {day = 1}
+
+    byyear = do
+      string "year"
+      return (now `addInterval` Years 1) {month = 1, day = 1}
 
 pWeekDay ∷ Parsec String st WeekDay
 pWeekDay = do
@@ -375,7 +397,7 @@ yesterday = do
 
 pByWeek ∷ DateTime → Parsec String st DateTime
 pByWeek date =
-  try (lastWeekDay date) <|> nextWeekDay date
+  try (lastDate date) <|> nextDate date
 
 -- | Parsec parser for DateTime.
 pDateTime ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
