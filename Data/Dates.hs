@@ -3,6 +3,7 @@
 module Data.Dates
   (DateTime (..),
    Time (..),
+   WeekDay (..),
    parseDate,
    pDate, pDateTime, pTime,
    pDateInterval,
@@ -10,7 +11,11 @@ module Data.Dates
    tryRead,
    DateIntervalType (..),
    DateInterval (..),
-   convertFrom, convertTo,
+   dayToDateTime, dateTimeToDay,
+   weekdayToInterval,
+   weekdayNumber,
+   intToWeekday,
+   dateWeekDay,
    modifyDate,
    datesDifference,
    addInterval, addTime
@@ -20,6 +25,7 @@ import Prelude.Unicode
 import Data.Char (toUpper)
 import Data.List
 import Data.Time.Calendar
+import Data.Time.Calendar.WeekDate
 import Data.Time.LocalTime
 import Text.Parsec
 import Text.Parsec.String
@@ -27,6 +33,39 @@ import Data.Generics
 
 import Data.Dates.Types
 import Data.Dates.Internal
+
+data DateIntervalType = Day | Week | Month | Year
+  deriving (Eq,Show,Read,Data,Typeable)
+
+data DateInterval = Days ℤ
+                  | Weeks ℤ
+                  | Months ℤ
+                  | Years ℤ
+  deriving (Eq,Show,Data,Typeable)
+
+data WeekDay =
+    Monday
+  | Tuesday
+  | Wednesday
+  | Thursday
+  | Friday
+  | Saturday
+  | Sunday
+  deriving (Eq, Show, Read, Ord, Enum, Bounded, Data, Typeable)
+
+-- | Weekday as interval from Monday, so that
+-- weekdayToInterval Monday == 0 and
+-- weekdayToInterval Sunday == 6.
+weekdayToInterval :: WeekDay -> DateInterval
+weekdayToInterval wd = Days (fromIntegral $ fromEnum wd)
+
+-- | Number of weekday, with Monday == 1 and Sunday == 7.
+weekdayNumber :: WeekDay -> Int
+weekdayNumber wd = fromEnum wd + 1
+
+-- | Reverse for weekdayNumber
+intToWeekday :: Int -> WeekDay
+intToWeekday i = toEnum (i - 1)
 
 -- | Get current date and time.
 getCurrentDateTime ∷  IO DateTime
@@ -40,6 +79,12 @@ getCurrentDateTime = do
       mins = todMin ltod
       s = round $ todSec ltod
   return $ DateTime (fromIntegral y) m d h mins s
+
+-- | Get weekday of given date.
+dateWeekDay :: DateTime -> WeekDay
+dateWeekDay dt =
+  let (_,_,wd) = toWeekDate (dateTimeToDay dt)
+  in  intToWeekday wd
 
 uppercase ∷ String → String
 uppercase = map toUpper
@@ -185,28 +230,19 @@ pAbsDate year =
                           euroNumDate',
                           americanDate']
 
-data DateIntervalType = Day | Week | Month | Year
-  deriving (Eq,Show,Read)
-
-data DateInterval = Days ℤ
-                  | Weeks ℤ
-                  | Months ℤ
-                  | Years ℤ
-  deriving (Eq,Show)
-
 -- | Convert date from DateTime to Day
-convertTo ∷  DateTime → Day
-convertTo dt = fromGregorian (fromIntegral $ year dt) (month dt) (day dt)
+dateTimeToDay ∷  DateTime → Day
+dateTimeToDay dt = fromGregorian (fromIntegral $ year dt) (month dt) (day dt)
 
 -- | Convert date from Day to DateTime
-convertFrom ∷  Day → DateTime
-convertFrom dt = 
+dayToDateTime ∷  Day → DateTime
+dayToDateTime dt = 
   let (y,m,d) = toGregorian dt
   in  date (fromIntegral y) m d
 
 -- | Modify DateTime with pure function on Day
 modifyDate ∷  (t → Day → Day) → t → DateTime → DateTime
-modifyDate fn x dt = convertFrom $ fn x $ convertTo dt
+modifyDate fn x dt = dayToDateTime $ fn x $ dateTimeToDay dt
 
 -- | Add date interval to DateTime
 addInterval ∷  DateTime → DateInterval → DateTime
@@ -218,8 +254,8 @@ addInterval dt (Years ys) = modifyDate addGregorianYearsClip ys dt
 -- | Number of days between two dates
 datesDifference ∷ DateTime → DateTime → Integer
 datesDifference d1 d2 =
-  abs $ toModifiedJulianDay (convertTo d1) -
-        toModifiedJulianDay (convertTo d2)
+  abs $ toModifiedJulianDay (dateTimeToDay d1) -
+        toModifiedJulianDay (dateTimeToDay d2)
 
 maybePlural ∷ String → Parsec String st String
 maybePlural str = do
@@ -245,7 +281,11 @@ pDateInterval = do
 
 pRelDate ∷ DateTime → Parsec String st DateTime
 pRelDate date = do
-  offs ← (try futureDate) <|> (try passDate) <|> (try today) <|> (try tomorrow) <|> yesterday
+  offs ← try futureDate
+     <|> try passDate
+     <|> try today
+     <|> try tomorrow
+     <|> yesterday
   return $ date `addInterval` offs
 
 futureDate ∷ Parsec String st DateInterval
@@ -274,7 +314,7 @@ passDate = do
 
 today ∷ Parsec String st DateInterval
 today = do
-  string "today"
+  string "today" <|> string "now"
   return $ Days 0
 
 tomorrow ∷ Parsec String st DateInterval
