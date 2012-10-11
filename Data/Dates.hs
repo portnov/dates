@@ -16,9 +16,11 @@ module Data.Dates
    weekdayNumber,
    intToWeekday,
    dateWeekDay,
+   lastMonday, nextMonday,
    modifyDate,
    datesDifference,
-   addInterval, addTime
+   addInterval, negateInterval, minusInterval,
+   addTime
   ) where
 
 import Prelude.Unicode
@@ -56,16 +58,22 @@ data WeekDay =
 -- | Weekday as interval from Monday, so that
 -- weekdayToInterval Monday == 0 and
 -- weekdayToInterval Sunday == 6.
-weekdayToInterval :: WeekDay -> DateInterval
+weekdayToInterval ∷ WeekDay → DateInterval
 weekdayToInterval wd = Days (fromIntegral $ fromEnum wd)
 
 -- | Number of weekday, with Monday == 1 and Sunday == 7.
-weekdayNumber :: WeekDay -> Int
+weekdayNumber ∷ WeekDay → Int
 weekdayNumber wd = fromEnum wd + 1
 
 -- | Reverse for weekdayNumber
-intToWeekday :: Int -> WeekDay
+intToWeekday ∷ Int → WeekDay
 intToWeekday i = toEnum (i - 1)
+
+lastMonday ∷ DateTime → DateTime
+lastMonday dt = dt `minusInterval` weekdayToInterval (dateWeekDay dt)
+
+nextMonday ∷ DateTime → DateTime
+nextMonday dt = lastMonday dt `addInterval` Weeks 1
 
 -- | Get current date and time.
 getCurrentDateTime ∷  IO DateTime
@@ -81,7 +89,7 @@ getCurrentDateTime = do
   return $ DateTime (fromIntegral y) m d h mins s
 
 -- | Get weekday of given date.
-dateWeekDay :: DateTime -> WeekDay
+dateWeekDay ∷ DateTime → WeekDay
 dateWeekDay dt =
   let (_,_,wd) = toWeekDate (dateTimeToDay dt)
   in  intToWeekday wd
@@ -251,6 +259,17 @@ addInterval dt (Weeks ws) = modifyDate addDays (ws*7) dt
 addInterval dt (Months ms) = modifyDate addGregorianMonthsClip ms dt
 addInterval dt (Years ys) = modifyDate addGregorianYearsClip ys dt
 
+-- | Negate DateInterval value: Days 3 → Days (-3).
+negateInterval ∷ DateInterval → DateInterval
+negateInterval (Days n)   = Days (negate n)
+negateInterval (Weeks n)  = Weeks (negate n)
+negateInterval (Months n) = Months (negate n)
+negateInterval (Years n)  = Years (negate n)
+
+-- | Subtract DateInterval from DateTime.
+minusInterval ∷ DateTime → DateInterval → DateTime
+minusInterval date int = date `addInterval` negateInterval int
+
 -- | Number of days between two dates
 datesDifference ∷ DateTime → DateTime → Integer
 datesDifference d1 d2 =
@@ -287,6 +306,33 @@ pRelDate date = do
      <|> try tomorrow
      <|> yesterday
   return $ date `addInterval` offs
+
+lastWeekDay ∷ DateTime → Parsec String st DateTime
+lastWeekDay now = do
+  string "last"
+  spaces
+  wd ← try (string "week" >> return Monday) <|> pWeekDay
+  let monday = lastMonday now
+      monday' = if wd > dateWeekDay now
+                  then monday `minusInterval` Weeks 1
+                  else monday
+  return $ monday' `addInterval` weekdayToInterval wd
+
+nextWeekDay ∷ DateTime → Parsec String st DateTime
+nextWeekDay now = do
+  string "next"
+  spaces
+  wd ← try (string "week" >> return Monday) <|> pWeekDay
+  let monday = nextMonday now
+      monday' = if wd >= dateWeekDay now
+                  then monday `minusInterval` Weeks 1
+                  else monday
+  return $ monday' `addInterval` weekdayToInterval wd
+
+pWeekDay ∷ Parsec String st WeekDay
+pWeekDay = do
+  w ← many1 (oneOf "mondaytueswnhrfi")
+  tryRead (capitalize w)
 
 futureDate ∷ Parsec String st DateInterval
 futureDate = do
@@ -327,15 +373,25 @@ yesterday = do
   string "yesterday"
   return $ Days (-1)
 
+pByWeek ∷ DateTime → Parsec String st DateTime
+pByWeek date =
+  try (lastWeekDay date) <|> nextWeekDay date
+
 -- | Parsec parser for DateTime.
 pDateTime ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
           → Parsec String st DateTime
-pDateTime date =  (try $ pRelDate date) <|> (try $ pAbsDateTime $ year date)
+pDateTime date =
+      (try $ pRelDate date)
+  <|> (try $ pByWeek date)
+  <|> (try $ pAbsDateTime $ year date)
 
 -- | Parsec parser for Date only.
 pDate ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
           → Parsec String st DateTime
-pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
+pDate date =
+      (try $ pRelDate date)
+  <|> (try $ pByWeek date)
+  <|> (try $ pAbsDate $ year date)
 
 -- | Parse date/time
 parseDate ∷ DateTime  -- ^ Current date / time, to use as base for relative dates
