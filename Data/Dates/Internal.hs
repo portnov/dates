@@ -2,6 +2,8 @@
 
 module Data.Dates.Internal where
 
+import Data.Char
+
 import Text.Parsec
 import Text.Parsec.String
 
@@ -11,6 +13,12 @@ tryRead str =
   case reads str of
     [(res, "")] -> return res
     _ -> fail $ "Cannot read: " ++ str
+
+tryReadInt ∷ Num a ⇒ String → Parsec String st a
+tryReadInt str =
+  if all isDigit str
+    then return $ fromIntegral $ foldl (\a b → 10*a+b) 0 $ map digitToInt str
+    else fail $ "Cannot read: " ++ str
 
 -- | Apply parser N times
 times ∷ Int
@@ -30,7 +38,7 @@ number ∷ Int   -- ^ Number of digits
        → Int   -- ^ Maximum value
        → Parsec String st Int
 number n m = do
-  t ← tryRead =<< (n `times` digit)
+  t ← tryReadInt =<< (n `times` digit)
   if t > m
     then fail "number too large"
     else return t

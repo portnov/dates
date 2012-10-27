@@ -8,7 +8,7 @@ module Data.Dates
    pDate, pDateTime, pTime,
    pDateInterval,
    getCurrentDateTime,
-   tryRead,
+   tryRead, tryReadInt,
    DateIntervalType (..),
    DateInterval (..),
    dayToDateTime, dateTimeToDay,
@@ -32,6 +32,7 @@ import Data.Time.LocalTime
 import Text.Parsec
 import Text.Parsec.String
 import Data.Generics
+import Data.Char (toLower)
 
 import Data.Dates.Types
 import Data.Dates.Internal
@@ -285,7 +286,12 @@ maybePlural str = do
 pDateIntervalType ∷ Parsec String st DateIntervalType
 pDateIntervalType = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
-  tryRead s
+  case head s of
+    'd' → return Day
+    'w' → return Week
+    'm' → return Month
+    'y' → return Year
+    _ → fail $ "Unknown date interval type: " ++ s
 
 pDateInterval ∷ Parsec String st DateInterval
 pDateInterval = do
@@ -293,10 +299,10 @@ pDateInterval = do
   spaces
   tp ← pDateIntervalType
   case tp of
-    Day →   Days   `fmap` tryRead n
-    Week →  Weeks  `fmap` tryRead n
-    Month → Months `fmap` tryRead n
-    Year →  Years  `fmap` tryRead n
+    Day →   Days   `fmap` tryReadInt n
+    Week →  Weeks  `fmap` tryReadInt n
+    Month → Months `fmap` tryReadInt n
+    Year →  Years  `fmap` tryReadInt n
 
 pRelDate ∷ DateTime → Parsec String st DateTime
 pRelDate date = do
@@ -354,7 +360,15 @@ nextDate now = do
 pWeekDay ∷ Parsec String st WeekDay
 pWeekDay = do
   w ← many1 (oneOf "mondaytueswnhrfi")
-  tryRead (capitalize w)
+  case map toLower w of
+    "monday"    → return Monday
+    "tuesday"   → return Tuesday
+    "wednesday" → return Wednesday
+    "thursday"  → return Thursday
+    "friday"    → return Friday
+    "saturday"  → return Saturday
+    "sunday"    → return Sunday
+    _           → fail $ "Unknown weekday: " ++ w
 
 futureDate ∷ Parsec String st DateInterval
 futureDate = do
@@ -363,10 +377,10 @@ futureDate = do
   char ' '
   tp ← pDateIntervalType
   case tp of
-    Day →   Days   `fmap` tryRead n
-    Week →  Weeks  `fmap` tryRead n
-    Month → Months `fmap` tryRead n
-    Year →  Years  `fmap` tryRead n
+    Day →   Days   `fmap` tryReadInt n
+    Week →  Weeks  `fmap` tryReadInt n
+    Month → Months `fmap` tryReadInt n
+    Year →  Years  `fmap` tryReadInt n
 
 passDate ∷ Parsec String st DateInterval
 passDate = do
@@ -375,10 +389,10 @@ passDate = do
   tp ← pDateIntervalType
   string " ago"
   case tp of
-    Day →   (Days   . negate) `fmap` tryRead n
-    Week →  (Weeks  . negate) `fmap` tryRead n
-    Month → (Months . negate) `fmap` tryRead n
-    Year →  (Years  . negate) `fmap` tryRead n
+    Day →   (Days   . negate) `fmap` tryReadInt n
+    Week →  (Weeks  . negate) `fmap` tryReadInt n
+    Month → (Months . negate) `fmap` tryReadInt n
+    Year →  (Years  . negate) `fmap` tryReadInt n
 
 today ∷ Parsec String st DateInterval
 today = do

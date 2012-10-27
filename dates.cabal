@@ -1,5 +1,5 @@
 name:                dates
-version:             0.2.1.0
+version:             0.2.1.1
 synopsis:            Small library for parsing different dates formats.
 description:         This package allows to parse many different formats
                      of dates. Both absolute and relative dates are supported.
@@ -44,7 +44,7 @@ library
   build-depends:       base >=4 && < 5,
                        base-unicode-symbols ==0.2.*,
                        time >= 1.4,
-                       parsec ==3.1.*,
+                       parsec >=3.1,
                        syb ==0.3.*
 
 Source-repository head
