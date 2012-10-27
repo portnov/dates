@@ -286,7 +286,7 @@ maybePlural str = do
 pDateIntervalType ∷ Parsec String st DateIntervalType
 pDateIntervalType = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
-  case head s of
+  case toLower (head s) of
     'd' → return Day
     'w' → return Week
     'm' → return Month
