@@ -251,7 +251,11 @@ dayToDateTime dt =
 
 -- | Modify DateTime with pure function on Day
 modifyDate ∷  (t → Day → Day) → t → DateTime → DateTime
-modifyDate fn x dt = dayToDateTime $ fn x $ dateTimeToDay dt
+modifyDate fn x dt =
+  let date = dayToDateTime $ fn x $ dateTimeToDay dt
+  in  date {hour   = hour   dt,
+            minute = minute dt,
+            second = second dt}
 
 -- | Add date interval to DateTime
 addInterval ∷  DateTime → DateInterval → DateTime
