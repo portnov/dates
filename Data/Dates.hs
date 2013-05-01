@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable #-}
+{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleContexts #-}
 -- | Operations with dates
 module Data.Dates
   (DateTime (..),
@@ -30,7 +30,6 @@ import Data.Time.Calendar
 import Data.Time.Calendar.WeekDate
 import Data.Time.LocalTime
 import Text.Parsec
-import Text.Parsec.String
 import Data.Generics
 import Data.Char (toLower)
 
@@ -121,7 +120,7 @@ addTime dt t = dt {
                  minute = tMinute t + minute dt,
                  second = tSecond t + second dt }
 
-euroNumDate ∷ Parsec String st DateTime
+euroNumDate ∷ Stream s m Char => ParsecT s st m DateTime
 euroNumDate = do
   d ← pDay
   char '.'
@@ -130,7 +129,7 @@ euroNumDate = do
   y ← pYear
   return $ date y m d
 
-americanDate ∷ Parsec String st DateTime
+americanDate ∷ Stream s m Char => ParsecT s st m DateTime
 americanDate = do
   y ← pYear
   char '/'
@@ -139,21 +138,21 @@ americanDate = do
   d ← pDay
   return $ date y m d
 
-euroNumDate' ∷ Int → Parsec String st DateTime
+euroNumDate' ∷ Stream s m Char => Int → ParsecT s st m DateTime
 euroNumDate' year = do
   d ← pDay
   char '.'
   m ← pMonth
   return $ date year m d
 
-americanDate' ∷ Int → Parsec String st DateTime
+americanDate' ∷ Stream s m Char => Int → ParsecT s st m DateTime
 americanDate' year = do
   m ← pMonth
   char '/'
   d ← pDay
   return $ date year m d
 
-strDate ∷ Parsec String st DateTime
+strDate ∷ Stream s m Char => ParsecT s st m DateTime
 strDate = do
   d ← pDay
   space
@@ -166,7 +165,7 @@ strDate = do
       notFollowedBy $ char ':'
       return $ date y m d
 
-strDate' ∷ Int → Parsec String st DateTime
+strDate' ∷ Stream s m Char => Int → ParsecT s st m DateTime
 strDate' year = do
   d ← pDay
   space
@@ -175,7 +174,7 @@ strDate' year = do
     Nothing → fail $ "unknown month: "++ms
     Just m  → return $ date year m d
 
-time24 ∷ Parsec String st Time
+time24 ∷ Stream s m Char => ParsecT s st m Time
 time24 = do
   h ← number 2 23
   char ':'
@@ -188,7 +187,7 @@ time24 = do
       notFollowedBy letter
       return $ Time h m s
 
-ampm ∷ Parsec String st Int
+ampm ∷ Stream s m Char => ParsecT s st m Int
 ampm = do
   s ← many1 letter
   case map toUpper s of
@@ -196,7 +195,7 @@ ampm = do
     "PM" → return 12
     _ → fail "AM/PM expected"
 
-time12 ∷ Parsec String st Time
+time12 ∷ Stream s m Char => ParsecT s st m Time
 time12 = do
   h ← number 2 12
   char ':'
@@ -209,10 +208,10 @@ time12 = do
   hd ← ampm
   return $ Time (h+hd) m s
 
-pTime ∷ Parsec String st Time
+pTime ∷ Stream s m Char => ParsecT s st m Time
 pTime = choice $ map try [time12, time24]
 
-pAbsDateTime ∷ Int → Parsec String st DateTime
+pAbsDateTime ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pAbsDateTime year = do
   date ← choice $ map try $ map ($ year) $ [
                               const euroNumDate,
@@ -229,7 +228,7 @@ pAbsDateTime year = do
       t ← pTime
       return $ date `addTime` t
 
-pAbsDate ∷ Int → Parsec String st DateTime
+pAbsDate ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pAbsDate year =
   choice $ map try $ map ($ year) $ [
                           const euroNumDate,
@@ -281,13 +280,13 @@ datesDifference d1 d2 =
   abs $ toModifiedJulianDay (dateTimeToDay d1) -
         toModifiedJulianDay (dateTimeToDay d2)
 
-maybePlural ∷ String → Parsec String st String
+maybePlural ∷ Stream s m Char => String → ParsecT s st m String
 maybePlural str = do
   r ← string str
   optional $ char 's'
   return (capitalize r)
 
-pDateIntervalType ∷ Parsec String st DateIntervalType
+pDateIntervalType ∷ Stream s m Char => ParsecT s st m DateIntervalType
 pDateIntervalType = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
   case toLower (head s) of
@@ -297,7 +296,7 @@ pDateIntervalType = do
     'y' → return Year
     _ → fail $ "Unknown date interval type: " ++ s
 
-pDateInterval ∷ Parsec String st DateInterval
+pDateInterval ∷ Stream s m Char => ParsecT s st m DateInterval
 pDateInterval = do
   n ← many1 digit
   spaces
@@ -308,7 +307,7 @@ pDateInterval = do
     Month → Months `fmap` tryReadInt n
     Year →  Years  `fmap` tryReadInt n
 
-pRelDate ∷ DateTime → Parsec String st DateTime
+pRelDate ∷ Stream s m Char => DateTime → ParsecT s st m DateTime
 pRelDate date = do
   offs ← try futureDate
      <|> try passDate
@@ -317,7 +316,7 @@ pRelDate date = do
      <|> yesterday
   return $ date `addInterval` offs
 
-lastDate ∷ DateTime → Parsec String st DateTime
+lastDate ∷ Stream s m Char => DateTime → ParsecT s st m DateTime
 lastDate now = do
     string "last"
     spaces
@@ -339,7 +338,7 @@ lastDate now = do
       string "year"
       return $ now {month = 1, day = 1}
 
-nextDate ∷ DateTime → Parsec String st DateTime
+nextDate ∷ Stream s m Char => DateTime → ParsecT s st m DateTime
 nextDate now = do
     string "next"
     spaces
@@ -361,7 +360,7 @@ nextDate now = do
       string "year"
       return (now `addInterval` Years 1) {month = 1, day = 1}
 
-pWeekDay ∷ Parsec String st WeekDay
+pWeekDay ∷ Stream s m Char => ParsecT s st m WeekDay
 pWeekDay = do
   w ← many1 (oneOf "mondaytueswnhrfi")
   case map toLower w of
@@ -374,7 +373,7 @@ pWeekDay = do
     "sunday"    → return Sunday
     _           → fail $ "Unknown weekday: " ++ w
 
-futureDate ∷ Parsec String st DateInterval
+futureDate ∷ Stream s m Char => ParsecT s st m DateInterval
 futureDate = do
   string "in "
   n ← many1 digit
@@ -386,7 +385,7 @@ futureDate = do
     Month → Months `fmap` tryReadInt n
     Year →  Years  `fmap` tryReadInt n
 
-passDate ∷ Parsec String st DateInterval
+passDate ∷ Stream s m Char => ParsecT s st m DateInterval
 passDate = do
   n ← many1 digit
   char ' '
@@ -398,36 +397,36 @@ passDate = do
     Month → (Months . negate) `fmap` tryReadInt n
     Year →  (Years  . negate) `fmap` tryReadInt n
 
-today ∷ Parsec String st DateInterval
+today ∷ Stream s m Char => ParsecT s st m DateInterval
 today = do
   string "today" <|> string "now"
   return $ Days 0
 
-tomorrow ∷ Parsec String st DateInterval
+tomorrow ∷ Stream s m Char => ParsecT s st m DateInterval
 tomorrow = do
   string "tomorrow"
   return $ Days 1
 
-yesterday ∷ Parsec String st DateInterval
+yesterday ∷ Stream s m Char => ParsecT s st m DateInterval
 yesterday = do
   string "yesterday"
   return $ Days (-1)
 
-pByWeek ∷ DateTime → Parsec String st DateTime
+pByWeek ∷ Stream s m Char => DateTime → ParsecT s st m DateTime
 pByWeek date =
   try (lastDate date) <|> nextDate date
 
 -- | Parsec parser for DateTime.
-pDateTime ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
-          → Parsec String st DateTime
+pDateTime ∷ Stream s m Char => DateTime       -- ^ Current date / time, to use as base for relative dates
+          → ParsecT s st m DateTime
 pDateTime date =
       (try $ pRelDate date)
   <|> (try $ pByWeek date)
   <|> (try $ pAbsDateTime $ year date)
 
 -- | Parsec parser for Date only.
-pDate ∷ DateTime       -- ^ Current date / time, to use as base for relative dates
-          → Parsec String st DateTime
+pDate ∷ Stream s m Char => DateTime       -- ^ Current date / time, to use as base for relative dates
+          → ParsecT s st m DateTime
 pDate date =
       (try $ pRelDate date)
   <|> (try $ pByWeek date)

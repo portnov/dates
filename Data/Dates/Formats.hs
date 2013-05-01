@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable #-}
+{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleContexts, FlexibleInstances #-}
 -- | This module allows to parse arbitrary date formats.
 -- Date formats are specified as strings:
 --
@@ -7,6 +7,8 @@
 --  * "YYYY\/MM\/DD"
 --
 --  * "DD\/MM\/YYYY, HH:mm:SS"
+--
+--  * "YY.MM.DD[, HH:mm:SS]"
 --
 --  * and so on.
 --
@@ -80,39 +82,39 @@ pFormat = do
       mandatory <- getState
       Fixed mandatory <$> (many1 $ noneOf "YMDHmS[] \t\r\n")
 
-pYear ∷ Int → Parsec String st DateTime
+pYear ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pYear n = do
   y ← number n 10000
   if y < 2000
     then return $ mempty {year = y+2000}
     else return $ mempty {year = y}
 
-pMonth ∷ Int → Parsec String st DateTime
+pMonth ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pMonth n = do
   m ← number n 12
   return $ mempty {month = m}
 
-pDay ∷ Int → Parsec String st DateTime
+pDay ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pDay n = do
   d ← number n 31
   return $ mempty {day = d}
 
-pHour ∷ Int → Parsec String st DateTime
+pHour ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pHour n = do
   h ← number n 23
   return $ mempty {hour = h}
 
-pMinute ∷ Int → Parsec String st DateTime
+pMinute ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pMinute n = do
   m ← number n 59
   return $ mempty {minute = m}
 
-pSecond ∷ Int → Parsec String st DateTime
+pSecond ∷ Stream s m Char => Int → ParsecT s st m DateTime
 pSecond n = do
   s ← number n 59
   return $ mempty {second = s}
 
-opt :: Monoid a => Bool -> Parsec String st a -> Parsec String st a
+opt :: Stream s m Char => Monoid a => Bool -> ParsecT s st m a -> ParsecT s st m a
 opt True  p = p
 opt False p = option mempty p
 
@@ -120,7 +122,7 @@ parseFormat :: String -> Either ParseError Format
 parseFormat formatStr = runParser pFormat True "(date format string)" formatStr
 
 -- | Make Parser for specified date format.
-formatParser ∷ Format → Parsec String st DateTime
+formatParser ∷ Stream s m Char => Format → ParsecT s st m DateTime
 formatParser format = mconcat <$> mapM parser format
   where
     parser (YEAR   m n) = opt m $ pYear n

@@ -2,7 +2,6 @@
 import Criterion.Main
 import Text.Parsec
 
-import Data.Dates
 import Data.Dates.Formats
 
 formatStr1 = "YYYY/MM/DD"
