@@ -12,7 +12,7 @@
 --
 module Data.Dates.Formats
   (FormatElement (..), Format,
-   pFormat, formatParser,
+   parseFormat, pFormat, formatParser,
    parseDateFormat
   ) where
 
@@ -25,36 +25,60 @@ import Data.Dates.Internal (number)
 
 -- | Date\/time format element
 data FormatElement =
-    YEAR   Int
-  | MONTH  Int
-  | DAY    Int
-  | HOUR   Int
-  | MINUTE Int
-  | SECOND Int
-  | Fixed String
+    YEAR   Bool Int
+  | MONTH  Bool Int
+  | DAY    Bool Int
+  | HOUR   Bool Int
+  | MINUTE Bool Int
+  | SECOND Bool Int
+  | Whitespace Bool
+  | Fixed  Bool String
   deriving (Eq, Show)
+
+type FormatParser a = Parsec String Bool a
 
 -- | Date\/time format
 type Format = [FormatElement]
 
-nchars ∷ Char → Parsec String st Int
+nchars ∷ Char → FormatParser Int
 nchars c = do
   s ← many1 $ char c
   return $ length s
 
--- | Parser for date\/time format.
-pFormat ∷ Parsec String st Format
-pFormat = many1 $ choice $ map try [pYear, pMonth, pDay,
-                                    pHour, pMinute, pSecond,
-                                    pFixed]
+brackets :: FormatParser a -> FormatParser a
+brackets p = do
+  char '['
+  setState False
+  result <- p
+  char ']'
+  setState True
+  return result
+
+pFormat :: FormatParser Format
+pFormat = do
+    elems <- many1 $ try (brackets format) <|> format
+    return $ concat elems
+
   where
-    pYear   = YEAR   <$> nchars 'Y'
-    pMonth  = MONTH  <$> nchars 'M'
-    pDay    = DAY    <$> nchars 'D'
-    pHour   = HOUR   <$> nchars 'H'
-    pMinute = MINUTE <$> nchars 'm'
-    pSecond = SECOND <$> nchars 'S'
-    pFixed  = Fixed <$> (many1 $ noneOf "YMDHmS")
+    format :: FormatParser Format
+    format =
+      many1 $ choice $ map try [element YEAR 'Y', element MONTH 'M',
+                                         element DAY  'D', element HOUR  'H',
+                                         element MINUTE 'm', element SECOND 'S',
+                                         whitespaces, fixed]
+
+    element constr c = do
+      mandatory <- getState
+      constr mandatory <$> nchars c
+
+    whitespaces = do
+      many1 $ oneOf " \r\n\t"
+      mandatory <- getState
+      return $ Whitespace mandatory
+
+    fixed = do
+      mandatory <- getState
+      Fixed mandatory <$> (many1 $ noneOf "YMDHmS[] \t\r\n")
 
 pYear ∷ Int → Parsec String st DateTime
 pYear n = do
@@ -88,23 +112,31 @@ pSecond n = do
   s ← number n 59
   return $ mempty {second = s}
 
+opt :: Monoid a => Bool -> Parsec String st a -> Parsec String st a
+opt True  p = p
+opt False p = option mempty p
+
+parseFormat :: String -> Either ParseError Format
+parseFormat formatStr = runParser pFormat True "(date format string)" formatStr
+
 -- | Make Parser for specified date format.
 formatParser ∷ Format → Parsec String st DateTime
 formatParser format = mconcat <$> mapM parser format
   where
-    parser (YEAR   n) = pYear n
-    parser (MONTH  n) = pMonth n
-    parser (DAY    n) = pDay n
-    parser (HOUR   n) = pHour n
-    parser (MINUTE n) = pMinute n
-    parser (SECOND n) = pSecond n
-    parser (Fixed s) = string s >> return mempty
+    parser (YEAR   m n) = opt m $ pYear n
+    parser (MONTH  m n) = opt m $ pMonth n
+    parser (DAY    m n) = opt m $ pDay n
+    parser (HOUR   m n) = opt m $ pHour n
+    parser (MINUTE m n) = opt m $ pMinute n
+    parser (SECOND m n) = opt m $ pSecond n
+    parser (Whitespace m) = opt m ((many1 $ oneOf " \t\r\n") >> return mempty)
+    parser (Fixed  m s) = opt m ( string s >> return mempty )
 
 -- | Parse date\/time in specified format.
 parseDateFormat :: String  -- ^ Format string, i.e. "DD.MM.YY"
                 -> String  -- ^ String to parse
                 -> Either ParseError DateTime
 parseDateFormat formatStr str = do
-  format <- runParser pFormat () "(date format string)" formatStr
+  format <- parseFormat formatStr 
   runParser (formatParser format) () "(date)" str
 

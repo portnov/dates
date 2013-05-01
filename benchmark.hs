@@ -5,16 +5,27 @@ import Text.Parsec
 import Data.Dates
 import Data.Dates.Formats
 
-formatStr = "YYYY/MM/DD"
+formatStr1 = "YYYY/MM/DD"
+formatStr2 = "YY.MM.DD[, HH:mm:SS]"
 
 main = do
-  format <- case runParser pFormat () formatStr formatStr of
+  format1 <- case parseFormat formatStr1 of
               Left err -> fail (show err)
               Right f -> return f
-  let parser = formatParser format
-      parse str = case runParser parser () str str of
+  format2 <- case parseFormat formatStr2 of
+              Left err -> fail (show err)
+              Right f -> return f
+  let parser1 = formatParser format1
+  let parser2 = formatParser format2
+      parse1 str = case runParser parser1 () str str of
+                    Left err -> error (show err)
+                    Right x -> x
+      parse2 str = case runParser parser2 () str str of
                     Left err -> error (show err)
                     Right x -> x
   defaultMain [
-      bench "parser" $ whnf parse "2012/09/12"
+      bench formatStr1 $ whnf parse1 "2012/09/12",
+      bench formatStr2 $ whnf parse2 "13.05.01, 11:47:15",
+      bench formatStr2 $ whnf parse2 "13.05.01",
+      bench formatStr2 $ whnf parse2 "13.05.01,    12:15:00"
     ]
