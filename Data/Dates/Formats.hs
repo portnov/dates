@@ -14,6 +14,7 @@
 --
 module Data.Dates.Formats
   (FormatElement (..), Format,
+   FormatParser,
    parseFormat, pFormat, formatParser,
    parseDateFormat
   ) where
