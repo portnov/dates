@@ -45,7 +45,7 @@ library
                        base-unicode-symbols ==0.2.*,
                        time >= 1.4,
                        parsec >=3.1,
-                       syb ==0.3.*
+                       syb >=0.3.7
 
   GHC-Options:         -O2
 
