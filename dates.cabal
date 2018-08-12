@@ -41,7 +41,7 @@ library
                        Data.Dates.Formats,
                        Data.Dates.Internal
 
-  build-depends:       base >=4 && < 4.11,
+  build-depends:       base >=4 && < 4.12,
                        base-unicode-symbols ==0.2.*,
                        time >= 1.4,
                        parsec >=3.1,

@@ -1,4 +1,5 @@
 {-# LANGUAGE UnicodeSyntax, DeriveDataTypeable #-}
+{-# LANGUAGE CPP #-}
 
 module Data.Dates.Types
   (DateTime (..),
@@ -7,6 +8,7 @@ module Data.Dates.Types
   ) where
 
 import Prelude.Unicode
+import Data.Semigroup
 import Data.Monoid
 import Data.Char
 import Data.Generics
@@ -59,9 +61,8 @@ data Time =
     tSecond ∷ Int }
   deriving (Eq,Ord,Show,Data,Typeable)
 
-instance Monoid DateTime where
-  mempty = DateTime 0 0 0 0 0 0
-  mappend dt1 dt2 =
+instance Semigroup DateTime where
+  dt1 <> dt2 = 
       DateTime (year dt1   `plus` year dt2)
                (month dt1  `plus` month dt2)
                (day dt1    `plus` day dt2)
@@ -72,4 +73,8 @@ instance Monoid DateTime where
       plus :: Int → Int → Int
       plus 0 x = x
       plus x _ = x
+
+instance Monoid DateTime where
+  mempty = DateTime 0 0 0 0 0 0
+  mappend = (Data.Semigroup.<>)
 
