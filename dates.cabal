@@ -41,11 +41,11 @@ library
                        Data.Dates.Formats,
                        Data.Dates.Internal
 
-  build-depends:       base >=4 && < 4.12,
+  build-depends:       base >=4.9 && < 4.13,
                        base-unicode-symbols ==0.2.*,
-                       time >= 1.4,
-                       parsec >=3.1,
-                       syb >=0.3.7
+                       time >= 1.4 && < 1.9,
+                       parsec ==3.1.*,
+                       syb >=0.3.7 && < 0.8
 
   GHC-Options:         -O2
 
