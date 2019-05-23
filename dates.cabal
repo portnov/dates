@@ -25,7 +25,7 @@ description:         This package allows to parse many different formats
                      User-specified date formats are supported by
                      Data.Dates.Formats module.
 
-homepage:            http://redmine.iportnov.ru/projects/dates/
+homepage:            https://github.com/portnov/dates
 license:             BSD3
 license-file:        LICENSE
 author:              IlyaPortnov
@@ -51,4 +51,4 @@ library
 
 Source-repository head
   type:     git
-  location: git://redmine.iportnov.ru/dates.git
+  location: https://github.com/portnov/dates.git
