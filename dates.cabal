@@ -43,7 +43,7 @@ library
 
   build-depends:       base >=4.9 && < 4.13,
                        base-unicode-symbols ==0.2.*,
-                       time >= 1.4 && < 1.9,
+                       time >= 1.4 && < 1.10,
                        parsec ==3.1.*,
                        syb >=0.3.7 && < 0.8
 

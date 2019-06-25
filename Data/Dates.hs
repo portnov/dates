@@ -27,8 +27,12 @@ import Prelude.Unicode
 import Data.Char (toUpper)
 import Data.List
 import Data.Time.Calendar
-import Data.Time.Calendar.WeekDate
+  ( Day, toGregorian, fromGregorian, addDays, addGregorianMonthsClip
+  , addGregorianYearsClip, toModifiedJulianDay )
+import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.LocalTime
+  ( getZonedTime, zonedTimeToLocalTime, localDay, localTimeOfDay
+  , todHour, todMin, todSec )
 import Text.Parsec
 import Data.Generics
 import Data.Char (toLower)
