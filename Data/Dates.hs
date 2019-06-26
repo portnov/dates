@@ -4,7 +4,7 @@ module Data.Dates
   (DateTime (..),
    Time (..),
    WeekDay (..),
-   parseDate,
+   parseDate, parseDateTime,
    pDate, pDateTime, pTime,
    pDateInterval,
    getCurrentDateTime,
@@ -436,9 +436,15 @@ pDate date =
   <|> (try $ pByWeek date)
   <|> (try $ pAbsDate $ year date)
 
--- | Parse date/time
+-- | Parse date
 parseDate ∷ DateTime  -- ^ Current date / time, to use as base for relative dates
           → String    -- ^ String to parse
           → Either ParseError DateTime
 parseDate date s = runParser (pDate date) () "" s
+
+-- | Parse date and time
+parseDateTime ∷ DateTime  -- ^ Current date / time, to use as base for relative dates
+          → String    -- ^ String to parse
+          → Either ParseError DateTime
+parseDateTime date s = runParser (pDateTime date) () "" s
 
