@@ -49,6 +49,14 @@ library
 
   GHC-Options:         -O2
 
+Test-suite main
+  type: exitcode-stdio-1.0
+  build-depends: base >= 4.9 && < 4.13,
+                 hspec,
+                 dates
+  hs-source-dirs: tests
+  main-is: Spec.hs
+
 Source-repository head
   type:     git
   location: https://github.com/portnov/dates.git
