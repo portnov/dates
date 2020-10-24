@@ -170,5 +170,5 @@ df = QuasiQuoter
     True  -> 'True
     False -> 'False
   i :: Int -> ExpQ
-  i = litE . intPrimL . toInteger
+  i = litE . integerL . toInteger
 
