@@ -41,9 +41,9 @@ library
                        Data.Dates.Formats,
                        Data.Dates.Internal
 
-  build-depends:       base >=4.9 && < 4.13,
+  build-depends:       base >=4.9 && < 4.16,
                        base-unicode-symbols ==0.2.*,
-                       time >= 1.4 && < 1.10,
+                       time >= 1.4 && < 1.12,
                        parsec ==3.1.*,
                        syb >=0.3.7 && < 0.8
 
@@ -51,7 +51,7 @@ library
 
 Test-suite main
   type: exitcode-stdio-1.0
-  build-depends: base >= 4.9 && < 4.13,
+  build-depends: base >= 4.9 && < 4.16,
                  hspec,
                  dates
   hs-source-dirs: tests
