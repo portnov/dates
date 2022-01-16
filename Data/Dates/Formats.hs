@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleContexts, FlexibleInstances, LambdaCase, BlockArguments, QuasiQuotes, TemplateHaskell #-}
 -- | This module allows to parse arbitrary date formats.
 -- Date formats are specified as strings:
 --
@@ -16,12 +16,15 @@ module Data.Dates.Formats
   (FormatElement (..), Format,
    FormatParser,
    parseFormat, pFormat, formatParser,
-   parseDateFormat
+   parseDateFormat,
+   df
   ) where
 
 import Control.Applicative ((<$>))
 import Data.Monoid
 import Text.Parsec
+import Language.Haskell.TH
+import Language.Haskell.TH.Quote (QuasiQuoter(..))
 
 import Data.Dates.Types
 import Data.Dates.Internal (number)
@@ -142,4 +145,30 @@ parseDateFormat :: String  -- ^ Format string, i.e. "DD.MM.YY"
 parseDateFormat formatStr str = do
   format <- parseFormat formatStr 
   runParser (formatParser format) () "(date)" str
+
+df :: QuasiQuoter
+df = QuasiQuoter
+  { quoteExp = either (fail . show) (listE . fmap fe2th) . parseFormat
+  , quotePat = err
+  , quoteType = err
+  , quoteDec = err
+  }
+  where
+  fe2th :: FormatElement -> ExpQ
+  fe2th = \case
+    YEAR       x y -> [e|YEAR       $(b x) $(i y)      |]
+    MONTH      x y -> [e|MONTH      $(b x) $(i y)      |]
+    DAY        x y -> [e|DAY        $(b x) $(i y)      |]
+    HOUR       x y -> [e|HOUR       $(b x) $(i y)      |]
+    MINUTE     x y -> [e|MINUTE     $(b x) $(i y)      |]
+    SECOND     x y -> [e|SECOND     $(b x) $(i y)      |]
+    Whitespace x   -> [e|Whitespace $(b x)             |]
+    Fixed      x y -> [e|Fixed      $(b x) $(stringE y)|]
+  err = const $ fail "Date format parser only defined for Exp"
+  b :: Bool -> ExpQ
+  b = conE . \case
+    True  -> 'True
+    False -> 'False
+  i :: Int -> ExpQ
+  i = litE . integerL . toInteger
 

@@ -45,7 +45,8 @@ library
                        base-unicode-symbols ==0.2.*,
                        time >= 1.4 && < 1.12,
                        parsec ==3.1.*,
-                       syb >=0.3.7 && < 0.8
+                       syb >=0.3.7 && < 0.8,
+                       template-haskell >=2.0.0.0 && <2.17
 
   GHC-Options:         -O2
 
