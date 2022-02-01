@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleContexts, FlexibleInstances, LambdaCase, BlockArguments, QuasiQuotes, TemplateHaskell #-}
+{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleContexts, FlexibleInstances, LambdaCase, QuasiQuotes, TemplateHaskell #-}
 -- | This module allows to parse arbitrary date formats.
 -- Date formats are specified as strings:
 --
